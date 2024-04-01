@@ -1,0 +1,289 @@
+<?php
+
+
+///Ir NTWARI Raoul  ----------- CARTE DES ALERTES POUR LES INCIDENTS
+
+class Carte_Centre_Situation extends CI_Controller
+{
+
+  public function __construct()
+  {
+    parent::__construct();
+  }
+
+
+
+  function index()
+  {
+
+    if (empty($this->session->userdata('USER_NAME'))) {
+      redirect(base_url());
+    } else {
+      $this->load->view('Carte_Centre_Situation_View');
+    }
+  }
+
+
+  function get_carte($value = '')
+  {
+
+    $zoom = 8;
+    $coord = '-3.4313888,29.9079177';
+    $PROVINCE_ID = $this->input->post('PROVINCE_ID');
+    $ID = $this->input->post('ID');
+    $crit = '';
+
+    if (!empty($PROVINCE_ID)) {
+      $crit = ' AND incident_declaration.PROVINCE_ID=' . $PROVINCE_ID . '';
+    }
+
+
+    $data_donne = '';
+
+    $maxId = $this->Model->getRequeteOne('SELECT MAX(ID_HISTORIQUE) as maxID FROM historiques h JOIN historiques_categories c on h.ID_HISTORIQUE_CATEGORIE=c.ID_CATEGORIE LEFT JOIN utilisateurs u on u.ID_UTILISATEUR=h.ID_UTILISATEUR LEFT JOIN psr_elements e on e.ID_PSR_ELEMENT=u.PSR_ELEMENT_ID WHERE 1 ');
+
+
+    $requete = $this->Model->getRequete('SELECT ID_RAISON,MONTANT, IF(IS_PAID=1,"Paié","Non Paié") as PAID,`ID_HISTORIQUE`,h.LATITUDE,h.LONGITUDE,ID_HISTORIQUE_CATEGORIE,c.DESCRIPTION, c.COLOR,c.MARK, h.DATE_INSERTION,e.NUMERO_MATRICULE,e.NOM,e.PRENOM,NUMERO_PLAQUE as NUMERO,a.LIEU_EXACTE FROM historiques h JOIN historiques_categories c on h.ID_HISTORIQUE_CATEGORIE=c.ID_CATEGORIE LEFT JOIN utilisateurs u on u.ID_UTILISATEUR=h.ID_UTILISATEUR LEFT JOIN psr_elements e on e.ID_PSR_ELEMENT=u.PSR_ELEMENT_ID LEFT JOIN psr_element_affectation ea ON ea.ID_PSR_ELEMENT=u.PSR_ELEMENT_ID LEFT JOIN psr_affectatations a on a.PSR_AFFECTATION_ID=ea.PSR_AFFECTATION_ID WHERE 1 ORDER BY h.ID_HISTORIQUE ');
+
+
+
+    $i = 0;
+    $dernier = count($requete);
+    $plaques = 0;
+    $permis = 0;
+    $physique = 0;
+    $Scan = 0;
+    $station = 0;
+    $radar = 0;
+
+    foreach ($requete as $key => $value) {
+
+      $i++;
+
+      $statut = 0;
+
+
+      if ($value['ID_HISTORIQUE'] == $maxId['maxID']) {
+        $statut = 1;
+      }
+
+
+
+      $numero = $value['NUMERO'];
+
+
+
+      $DESCRIPTION = $this->remplace_lettre($value['DESCRIPTION']);
+      $DESCRIPTION = trim(str_replace('"', '\"', $DESCRIPTION));
+      $DESCRIPTION = str_replace("\n", "", $DESCRIPTION);
+      $DESCRIPTION = str_replace("\r", "", $DESCRIPTION);
+      $DESCRIPTION = str_replace("\t", "", $DESCRIPTION);
+
+
+
+      $DATE_INSERTION = $value['DATE_INSERTION'];
+      $NUMERO_MATRICULE = $value['NUMERO_MATRICULE'];
+
+      $lat = $value['LATITUDE'];
+      $long = $value['LONGITUDE'];
+
+      $provinces = $value['NUMERO_MATRICULE'];
+
+      $color = '';
+      $marker = '';
+      $annule = 0;
+
+      
+
+     
+
+     
+
+      if (!empty($value['ID_RAISON'])) {
+        $color = '848484';
+        $marker = 'civic-building';
+        $annule = 2;
+        $Scan++;
+      }else{
+        $color = $value['COLOR'];
+        $marker = $value['MARK'];
+        $annule = 1;
+      }
+
+
+      $amande = !empty($value['MONTANT']) ? number_format($value['MONTANT'], 0, ',', ' ') . " FBU (" . $value['PAID'] . ")" : "000 FBU";
+
+      $data_donne .= $lat . '<>' . $long . '<>' . $DESCRIPTION . '<>' . $value['NUMERO'] . '<>' . $DATE_INSERTION . '<>' .$this->remplace_lettre($value['NOM'].' '.$value['PRENOM']) . '<>' . $statut . '<>' . $NUMERO_MATRICULE . '<>' . $value['ID_HISTORIQUE_CATEGORIE'] . '<>' . $plaques . '<>' . $permis . '<>' . $physique . '<>' . $Scan . '<>' . $amande . '<>' . $this->remplace_lettre($value['LIEU_EXACTE']) .'<>'. $value['ID_HISTORIQUE']. '<>'. $annule. '<>' .$color. '<>' .$marker. '<>' . '$';
+    }
+
+    $labe = $this->Model->getRequete("SELECT COUNT(ID_HISTORIQUE_CATEGORIE) as nombr,ID_HISTORIQUE_CATEGORIE,ca.DESCRIPTION,ca.COLOR FROM historiques h JOIN historiques_categories ca on h.ID_HISTORIQUE_CATEGORIE=ca.ID_CATEGORIE WHERE ID_RAISON is null GROUP BY ID_HISTORIQUE_CATEGORIE ,ca.DESCRIPTION,ca.COLOR ");
+
+    $ihm = "";
+
+    $js = "";
+
+    foreach ($labe as $key => $labe) {
+    $ihm.= "<tr>
+         <td width='100%'><span style='width: 15px;height: 15px;border-radius: 10px;background:#".$labe['COLOR']."' ;'></span>&emsp;<input type='checkbox' checked  name='opt".$labe['ID_HISTORIQUE_CATEGORIE']."'> ".ucfirst($labe['DESCRIPTION'])." (<a href='#' onclick='getincident(1)'>".number_format($labe['nombr'],0,',',' ')."</a>)</td>
+         </tr>";
+
+    $js.= '$(\'input[name="opt'.$labe['ID_HISTORIQUE_CATEGORIE'].'"]\').click(function(){
+  
+            if($(this).is(":checked")){
+                 
+                map.addLayer(markers'.$labe['ID_HISTORIQUE_CATEGORIE'].');
+              
+
+            }else if($(this).is(":not(:checked)")){
+
+                
+                map.removeLayer(markers'.$labe['ID_HISTORIQUE_CATEGORIE'].');
+             
+            }
+            });';
+    }
+
+
+
+
+    //print_r($data_donne);die();
+    $data['labels'] = $ihm;
+    $data['jsfiltre'] = $js;
+
+
+    $data['data_donne'] = $data_donne;
+    $data['plaques'] = $plaques;
+    $data['permis'] = $permis;
+    $data['physique'] = $physique;
+    $data['Scan'] = $Scan;
+
+    $data['PROVINCE_ID'] = 3;
+
+
+    $data['provinces'] = $this->Model->getRequete('SELECT * FROM syst_provinces WHERE 1 ');
+
+
+
+
+    $data['dernier'] = $this->Model->getRequeteOne('SELECT ID_RAISON,MONTANT, IF(IS_PAID=1,"Paié","Non Paié") as PAID,`ID_HISTORIQUE`,h.LATITUDE,h.LONGITUDE,ID_HISTORIQUE_CATEGORIE,c.DESCRIPTION, c.COLOR,c.MARK, h.DATE_INSERTION,e.NUMERO_MATRICULE,e.NOM,e.PRENOM,NUMERO_PLAQUE as NUMERO,a.LIEU_EXACTE FROM historiques h JOIN historiques_categories c on h.ID_HISTORIQUE_CATEGORIE=c.ID_CATEGORIE LEFT JOIN utilisateurs u on u.ID_UTILISATEUR=h.ID_UTILISATEUR LEFT JOIN psr_elements e on e.ID_PSR_ELEMENT=u.PSR_ELEMENT_ID LEFT JOIN psr_element_affectation ea ON ea.ID_PSR_ELEMENT=u.PSR_ELEMENT_ID LEFT JOIN psr_affectatations a on a.PSR_AFFECTATION_ID=ea.PSR_AFFECTATION_ID WHERE 1 ORDER BY h.ID_HISTORIQUE DESC LIMIT 1 ');
+
+    if ($ID == 1) {
+      $zoom = 18;
+      $coord = '' . $data['dernier']['LATITUDE'] . ',' . $data['dernier']['LONGITUDE'] . '';
+    }
+
+
+
+
+    $data['dernier_2'] = $this->Model->getRequete('SELECT ID_RAISON,MONTANT, IF(IS_PAID=1,"Paié","Non Paié") as PAID,`ID_HISTORIQUE`,h.LATITUDE,h.LONGITUDE,ID_HISTORIQUE_CATEGORIE,c.DESCRIPTION, c.COLOR,c.MARK, h.DATE_INSERTION,e.NUMERO_MATRICULE,e.NOM,e.PRENOM,NUMERO_PLAQUE as NUMERO,a.LIEU_EXACTE FROM historiques h JOIN historiques_categories c on h.ID_HISTORIQUE_CATEGORIE=c.ID_CATEGORIE LEFT JOIN utilisateurs u on u.ID_UTILISATEUR=h.ID_UTILISATEUR LEFT JOIN psr_elements e on e.ID_PSR_ELEMENT=u.PSR_ELEMENT_ID LEFT JOIN psr_element_affectation ea ON ea.ID_PSR_ELEMENT=u.PSR_ELEMENT_ID LEFT JOIN psr_affectatations a on a.PSR_AFFECTATION_ID=ea.PSR_AFFECTATION_ID WHERE 1 ORDER BY h.ID_HISTORIQUE DESC LIMIT 10');
+
+    $data['zoom'] = $zoom;
+    $data['coord'] = $coord;
+
+
+    $map = $this->load->view('Get_Situation', $data, TRUE);
+    $output = array('cartes' => $map, 'id' => $ID);
+    echo json_encode($output);
+  }
+
+
+
+  public function getincident($id, $type = null)
+  {
+    $crito = '';
+    $PROVINCE_ID = $this->input->post('PROVINCE_ID');
+
+
+    if (!empty($PROVINCE_ID)) {
+      $crito = ' and incident_declaration.PROVINCE_ID=' . $PROVINCE_ID . '';
+    }
+
+
+    $query_principal = 'SELECT MONTANT, IF(IS_PAID=1,"Paié","Non Paié") as PAID,`ID_HISTORIQUE`,h.LATITUDE,h.LONGITUDE,ID_HISTORIQUE_CATEGORIE,c.DESCRIPTION,h.DATE_INSERTION,e.NUMERO_MATRICULE,IF(`NUMERO_PERMIS` is NULL,`NUMERO_PLAQUE`, NUMERO_PERMIS) as NUMERO FROM historiques h JOIN historiques_categories c on h.ID_HISTORIQUE_CATEGORIE=c.ID_CATEGORIE LEFT JOIN utilisateurs u on u.ID_UTILISATEUR=h.ID_UTILISATEUR LEFT JOIN psr_elements e on e.ID_PSR_ELEMENT=u.PSR_ELEMENT_ID WHERE 1 AND h.ID_HISTORIQUE_CATEGORIE=' . $id;
+
+
+    $var_search = !empty($_POST['search']['value']) ? $_POST['search']['value'] : null;
+
+    $limit = 'LIMIT 0,10';
+
+
+    if ($_POST['length'] != -1) {
+      $limit = 'LIMIT ' . $_POST["start"] . ',' . $_POST["length"];
+    }
+    $order_by = '';
+
+    $order_column = array('ID_HISTORIQUE', 'DATE_INSERTION');
+
+    $order_by = isset($_POST['order']) ? ' ORDER BY ' . $order_column[$_POST['order']['0']['column']] . '  ' . $_POST['order']['0']['dir'] : ' ORDER BY ID_HISTORIQUE   DESC';
+
+    $search = !empty($_POST['search']['value']) ? (" AND  (NOM LIKE '%$var_search%' OR DATE_INSERTION LIKE '%$var_search%' OR NUMERO_MATRICULE LIKE '%$var_search%' OR DESCRIPTION LIKE '%$var_search%')  ") : '';
+
+    $critaire = '';
+
+    $query_secondaire = $query_principal . ' ' . $critaire . ' ' . $search . ' ' . $order_by . '   ' . $limit;
+    $query_filter = $query_principal . ' ' . $critaire . ' ' . $search;
+
+
+    $fetch_op = $this->Modele->datatable($query_secondaire);
+    $data = array();
+    foreach ($fetch_op as $row) {
+
+
+
+      $sexe = 'Homme';
+
+
+      $sub_array = array();
+      $sub_array[] = $row->NUMERO;
+      $sub_array[] = $row->DESCRIPTION;
+      $sub_array[] = "<span style='float:right'>" . number_format($row->MONTANT, 0, '.', ' ') . " FBU</span>";
+      $sub_array[] = $row->PAID;
+      $sub_array[] = $row->DATE_INSERTION;
+
+
+
+      $data[] = $sub_array;
+    }
+    $output = array(
+      "draw" => intval($_POST['draw']),
+      "recordsTotal" => $this->Modele->all_data($query_principal),
+      "recordsFiltered" => $this->Modele->filtrer($query_filter),
+      "data" => $data
+    );
+    echo json_encode($output);
+  }
+
+
+
+
+  public function check_new()
+  {
+
+    $get = $this->Model->getRequeteOne('SELECT COUNT(*) AS Nbr FROM historiques WHERE NEW=0');
+    $send = 0;
+    if ($get['Nbr'] > 0) {
+      $send = 1;
+      $this->Model->update('historiques', array('NEW' => 0), array('NEW' => 1));
+    }
+
+
+    $output = array('nbr' => $send);
+    echo json_encode($output);
+  }
+
+
+
+  function remplace_lettre($message = "")
+  {
+
+    $message = str_replace('é', 'e', $message);
+
+      $message = trim(str_replace('"', '\"', $message));
+      $message = str_replace("\n", "", $message);
+      $message = str_replace("\r", "", $message);
+      $message = str_replace("\t", "", $message);
+      $message = str_replace("'", "\'", $message);
+
+    return  $message;
+  }
+}

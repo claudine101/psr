@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ICCM | Connexion</title>
+
+  <!-- Google Font: Source Sans Pro -->
+  <!-- <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback"> -->
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="<?=base_url()?>plugins/fontawesome-free/css/all.min.css">
+  <!-- icheck bootstrap -->
+  <link rel="stylesheet" href="<?=base_url()?>plugins/icheck-bootstrap/icheck-bootstrap.min.css">
+  <!-- Theme style -->
+  <link rel="stylesheet" href="<?=base_url()?>dist/css/adminlte.min.css">
+</head>
+<body class="hold-transition">
+
+
+
+  <div class="login-page">
+    <div class="row">
+      <a href="<?=base_url()?>">
+        <img src="<?=base_url()?>dist/img/iccm_logo_bleu.png">
+      </a>
+    </div>
+    <div class="modal fade bd-example-modal-lg" id="toblock" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+          <form id="myform">
+            <div class="col-12" style="padding: 40px;">
+              <legend><center>CREER UN COMPTE</center></legend>
+              <div class="text-info" id="openc" style="display: none;">Operation en cours...</div>
+              <div class="text-success" id="succ" style="display: none;">Operation reussi</div>
+              <div class="row">
+                <div class="col-6" >
+                  <label>Nom</label>
+                  <input type="text" name="NOM" class="form-control" autofocus="" id="NOM">
+                  <label class="text-danger" id="error_nom"></label>
+                </div>
+                <div class="col-6" >
+                  <label>Prénom</label>
+                  <input type="text" name="PRENOM" class="form-control" id="PRENOM">
+                  <label class="text-danger" id="error_prenom"></label>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-6" >
+                  <label>Sexe</label>
+                  <select class="form-control" id="SEXE_ID" >
+                    <option value="">Sélectionner</option>
+                    <option value="1">Homme</option>
+                    <option value="2">Femme</option>
+                  </select>
+                  <label class="text-danger" id="error_sexe"></label>
+                </div>
+                <div class="col-6" >
+                  <label>Tél</label>
+                  <input type="text" name="TEL" class="form-control" autofocus="" id="TEL">
+                  <label class="text-danger" id="error_tel"></label>
+                </div>
+
+              </div>
+              <div class="row">
+                <div class="col-6" >
+                  <label>Email</label>
+                  <input type="text" name="EMAIL" class="form-control" id="EMAIL">
+                  <label class="text-danger" id="error_email"></label>
+                </div>
+                <div class="col-6" >
+                  <label>Comfirmer email</label>
+                  <input type="text" name="COMFIRMER_EMAIL" class="form-control" id="COMFIRMER_EMAIL">
+                  <label class="text-danger" id="error_comfirm_email"></label>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-6" >
+                  <label>Catégorie Structure</label>
+                  <select class="form-control" id="TYPE_INTERVENANT_STRUCTURE_ID" onclick="get_structure(this.value)" >
+                    <option value="">Sélectionner</option>
+                    <?php foreach ($type_intervenants_structures as $key) {
+              # code...
+                     ?>
+                     <option value="<?= $key['TYPE_INTERVENANT_STRUCTURE_ID'] ?>"><?= $key['TYPE_INTERVENANT_STRUCTURE_DESCR'] ?></option>
+                     <?php } ?>
+                   </select>       
+                 </div>
+                 <div class="col-6" id="district" style="display: none;" >
+                  <label>District Sanitaire</label>
+                  <select class="form-control" id="ID_DISTRICT" onclick="get_structure_cds(this.value)" >
+                    <option value="">Sélectionner</option>
+
+                  </select> 
+                </div>
+                <div class="col-6" >
+                  <label>Structure</label>
+                  <select class="form-control"  id="ID_STRUCTURE">
+                    <option value="">Sélectionner</option>
+
+                  </select> 
+                  <label class="text-danger" id="error_structure"></label>
+                </div>
+              </div>
+              <br>
+              <div class="row">
+                <div class="col-6" >
+
+                </div>
+                <div class="col-6" >
+                </form>
+                <button id="btn_val" type="button" style="float: right;" class="btn btn-primary" onclick="validate_formular()"><i class="fa fa-save"></i>Enregistrer</button>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <div class="login-box">
+      <!-- /.login-logo -->
+      <div class="card">
+        <div class="card-body login-card-body">
+
+         <div id="message_login"></div>
+         <form id="form_login" action="<?=base_url('Login/do_login')?>" method="POST">  
+          <div class="text-center mb-4">
+            <h1 class="h5 mb-3 font-weight-normal"><b>Connexion</b></h1>
+          </div>
+
+          <div class="input-group mb-3">
+            <input type="text" class="form-control" id="inputUsername" placeholder="Email" name="inputUsername">
+            <div class="input-group-append">
+              <div class="input-group-text">
+                <span class="fas fa-envelope"></span>
+              </div>
+            </div>
+          </div>
+          <div class="input-group mb-3">
+            <input type="password" class="form-control" id="inputPassword" placeholder="Mot de passe" name="inputPassword">
+            <div class="input-group-append">
+              <div class="input-group-text">
+                <span class="fas fa-lock"></span>
+              </div>
+            </div>
+          </div>
+          <div class="row text-center">
+            <!-- /.col -->
+            <div class="col-4 mt-1">
+              <a href="<?= base_url('Login/forgot_password')?>" class='text-center'><i>Mot de passe oublié?</i></a>
+            </div>
+            <div class="col-4 mt-1">
+              <a href="#" class='text-center' data-toggle="modal" data-target=".bd-example-modal-lg"><i>Créer un compte?</i></a>
+            </div>
+
+
+            <div>
+              <button id="sign"  class="btn btn-primary btn-block" onclick="login()">Connexion</button>
+            </div>
+          </div>
+          <!-- /.col -->
+        </div>
+      </form>
+    </div>
+    <!-- /.login-card-body -->
+  </div>
+</div>
+</div>
+<!-- /.login-box -->
+
+<!-- jQuery -->
+<script src="<?=base_url()?>plugins/jquery/jquery.min.js"></script>
+<!-- Bootstrap 4 -->
+<script src="<?=base_url()?>plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+<!-- AdminLTE App -->
+<script src="<?=base_url()?>dist/js/adminlte.min.js"></script>
+
+<script>
+
+  function login()
+  {
+    $('#sign').text('Connexion'); 
+    $('#sign').attr('disabled',true);
+    $('#message_login').html('')
+    
+    var formData = $('#form_login').serialize();
+
+    $.ajax({
+      url : "<?=base_url()?>Login/check_login",
+      type: "POST",
+      data: formData,
+      dataType: "JSON",
+      success: function(data)
+      {
+
+        if (data.status) {
+          $('#message_login').html("<center><span class='text text-success'>"+data.message+"</span></center>");
+          $('#sign').attr('disabled',true);
+          setTimeout(function(){ 
+            $('#form_login').submit();
+            
+          }, 5000);
+
+
+        }else{
+          $('#message_login').html("<span class='text text-danger'>"+data.message+"</span>");
+        }
+        $('#sign').text('Connexion'); 
+        $('#sign').attr('disabled',false); 
+      }
+
+    });
+  }
+
+
+  function login_form()
+  {
+
+
+  }
+</script>
+
+
+
+
+<script type="text/javascript">
+  function get_structure(TYPE_INTERVENANT_STRUCTURE_ID) {
+    // body...
+   // alert(type_action);
+
+   if (Number(TYPE_INTERVENANT_STRUCTURE_ID)!=5) {
+    $("#district").hide();
+    $("#ID_DISTRICT").val('');
+    $.post('<?php echo base_url();?>Login/get_structure/1',
+    {
+
+      TYPE_INTERVENANT_STRUCTURE_ID:TYPE_INTERVENANT_STRUCTURE_ID
+      
+    },
+    function(data) 
+    { 
+      ID_STRUCTURE.innerHTML = data; 
+      $('#ID_STRUCTURE').html(data);
+
+    }); 
+  } else if (Number(TYPE_INTERVENANT_STRUCTURE_ID)==5) {
+   $("#ID_STRUCTURE").html('');
+   $("#district").show();
+ }    
+}
+function get_structure_cds(BDS_ID) {
+    // body...
+   // alert(type_action);
+
+   $.post('<?php echo base_url();?>Login/get_structure/2',
+   {
+    TYPE_INTERVENANT_STRUCTURE_ID:BDS_ID
+
+  },
+  function(data) 
+  { 
+    ID_STRUCTURE.innerHTML = data; 
+    $('#ID_STRUCTURE').html(data);
+
+  }); 
+
+ }
+
+ $( document ).ready(function() {
+    //setTimeout(function(){ window.location.href = "<?= base_url('Login/do_logout')?>"; }, 3001);
+    $.post('<?php echo base_url();?>Login/get_district/',
+    {
+
+
+    },
+    function(data) 
+    { 
+      ID_DISTRICT.innerHTML = data; 
+      $('#ID_DISTRICT').html(data);
+
+    }); 
+  });
+
+
+ function validate_formular() {
+    // body...
+    var nom=$('#NOM').val();
+    var prenom=$('#PRENOM').val();
+    var tel=$('#TEL').val();
+    var comfirmer_email=$('#COMFIRMER_EMAIL').val();
+    var email=$('#EMAIL').val();
+    var sexe=$('#SEXE_ID').val();
+    var structure=$('#ID_STRUCTURE').val();
+    if (nom=="") {
+      $('#error_nom').html('Champ obligatoire');
+
+    }else{
+      $('#error_nom').html('');
+    }
+    if (prenom=="") {
+      $('#error_prenom').html('Champ obligatoire');
+
+    }else{
+      $('#error_prenom').html('');
+    }
+    if (tel=="") {
+      $('#error_tel').html('Champ obligatoire');
+
+    }else{
+      $('#error_tel').html('');
+    }
+    if (email=="") {
+      $('#error_email').html('Champ obligatoire');
+
+    }else{
+      $('#error_email').html('');
+    }
+    if (sexe=="") {
+      $('#error_sexe').html('Champ obligatoire');
+
+    }else{
+      $('#error_sexe').html('');
+    }
+    if (structure=="") {
+      $('#error_structure').html('Champ obligatoire');
+
+    }else{
+      $('#error_structure').html('');
+    }
+    if (comfirmer_email=="") {
+      $('#error_comfirm_email').html('Champ obligatoire');
+
+    }else{
+      $('#error_comfirm_email').html('');
+    }
+    if (email!="") {
+     var emailReg = /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/;
+
+     var test_email=1;
+
+     if(!emailReg.test(email)){
+      $('#error_email').html('Email invalide!');
+      test_email=0
+    }else{
+      $('#error_email').html('');
+    }
+  }
+
+
+  var str1 = email;
+  var str2 = comfirmer_email;
+  var n = str1.localeCompare(str2);
+  if (n!=0) {
+    $('#error_email').html('Verifiez si l\'email est valide');
+    $('#error_comfirm_email').html('Verifiez si l\'email est valide');
+  }else{
+    $('#error_email').html('');
+    $('#error_comfirm_email').html('');    
+  }
+
+  if (sexe!="" && tel!="" && nom!="" && prenom!="" && email!="" && structure!="" && test_email==1 && n==0) {
+    $('#openc').show();
+
+
+    $('#toblock').modal({ backdrop: false });
+    $('#btn_val').hide();
+    var form= new FormData();   
+    form.append("NOM",nom);
+    form.append("PRENOM",prenom);
+    form.append("TYPE_INTERVENANT_STRUCTURE_ID",$('#TYPE_INTERVENANT_STRUCTURE_ID').val());
+    //form.append("PIECE_JUSTIFICATIF",$('input[type=file]')[0].files[0]);
+    form.append("SEXE_ID",sexe);
+    form.append("TELEPHONE1",tel);
+    form.append("EMAIL",email);
+    form.append("INTERVENANT_STRUCTURE_ID",structure);
+
+    $.ajax({
+      url: "<?php echo base_url('Login/valider');?>",
+      type: "POST",
+      data: form,
+      processData: false,  
+      contentType: false,
+      success:function(data) 
+      { 
+
+       if (data==1) {
+        $('#succ').show();
+        $('#openc').hide();
+        $('#btn_val').show();
+        $('#toblock').modal('hide');
+        window.location.href = "<?= base_url('')?>";
+      }
+
+
+     // if (data=="2") {
+
+
+     // $('#error').html('<div class="alert alert-success">Opération réussi avec succes</div>')
+     // $('.err').modal();
+     // $('#toblock').modal('hide');
+
+
+     //  }else{
+     // $('#toblock').modal('hide');
+     // $('#error').html('<div class="alert alert-danger">Erreur de connexion!</div>')
+     // $('.err').modal();
+     //  }
+   }
+
+ });
+  }
+}
+</script>
+</body>
+</html>
